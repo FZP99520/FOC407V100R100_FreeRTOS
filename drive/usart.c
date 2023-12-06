@@ -99,7 +99,6 @@ void USART1_Receive_Data_Task(void *pvParameters)
             }
         }
     }
-
 }
 
 /*********************USART1*******************************/
