@@ -344,7 +344,7 @@ void Led1_Task(void * pvParameters)
         LED_PWM_SET_COMPARE((f32SinVal+1.0f)/2*LED_PWM_PERIOD);
         f32Tcnt +=f32Ts/1000;
         FR_OS_DelayMs(f32Ts);
-    //test for git
+
 #else
         float f32Angle;
         float f32Omega;
