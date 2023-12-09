@@ -5,6 +5,7 @@
 #include "drv8323.h"
 #include "DataScope_DP.h"
 #include "filter.h"
+#include "ANO_DT.h"
 
 
 #ifndef TRUE
@@ -47,6 +48,8 @@ float _af32AcquireCurrent[E_FOC_ACQUIRE_CURRENT_INDEX_MAX] = {0};
 static u8 _bIsFocActive = FALSE;
 EN_FOC_STATUS_e _eFocStatus = E_FOC_STATUS_NULL;
 EN_FOC_LOCK_MODE_e _eFocLockMode = E_FOC_LOCK_ANGLE;
+
+ST_FOC_Ctrl_Params_t stFocInputCtrl;
 
 float f32InputAngle = 0;
 float f32InputOmega = 60;
@@ -279,7 +282,7 @@ void FOC_PWM_Update_IRQ_Handle(void)
         }
         case E_FOC_LOCK_OMEGA:
         {
-            float f32OmegaKa = 0.001f;
+            float f32OmegaKa = 0.005f;
             f32TargetOmega += f32OmegaKa*(f32InputOmega - f32TargetOmega);
             stPidParams_AngleOmega.f32OutputLimit = f32OmegaLimit;
             PID_Position_Cal(&stPidParams_AngleOmega, f32TargetOmega, f32MeasureOmega, \
@@ -588,66 +591,20 @@ void FOC_Control_Running_Task(void *pvParameters)
         #endif
         if(_eFocStatus == E_FOC_STATUS_RUNNING)
         {
+            _eFocLockMode = (EN_FOC_LOCK_MODE_e)stFocInputCtrl.u8lock_mode;
             if(_eFocLockMode == E_FOC_LOCK_ANGLE)
             {
-                #if 0
-                if((f32InputAngle >= 360) && (u8dir == 1))
-                {
-                    u8dir = 0;
-                    //FR_OS_DelayMs(1000);
-                }
-                else if((f32InputAngle <= -360) && (u8dir == 0))
-                {
-                    u8dir = 1;
-                    //FR_OS_DelayMs(2000);
-                }
-                if(u8dir)
-                {
-                    f32InputAngle += 30;
-                }
-                else
-                {
-                    f32InputAngle -= 30;
-                }
-                FR_OS_DelayMs(500);
-                continue;
-                #endif
-                _eFocLockMode = E_FOC_LOCK_OMEGA;
-                f32InputOmega = 720;
-                //_eFocLockMode = E_FOC_LOCK_ID_IQ;
-                //f32InputId = 0.5f;
-                //f32InputIq = 0.0f;
-                //_eFocLockMode = E_FOC_LOCK_TEST_MODE;
+                f32InputAngle = stFocInputCtrl.f32InputAngle;
             }
             else if(_eFocLockMode == E_FOC_LOCK_OMEGA)
             {
-                #if 0
-                if((f32InputOmega >= 720) && (u8dir == 1))
-                {
-                    u8dir = 0;
-                    FR_OS_DelayMs(2000);
-                }
-                else if((f32InputOmega <= -720) && (u8dir == 0))
-                {
-                    u8dir = 1;
-                    FR_OS_DelayMs(2000);
-                }
-
-                if(u8dir)
-                {
-                    f32InputOmega += 60;
-                }
-                else
-                {
-                    f32InputOmega -= 60;
-                }
-                FR_OS_DelayMs(2);
-                continue;
-                #endif
+                f32InputOmega = stFocInputCtrl.f32InputOmega;
             }
-            //f32TargetAngle += 30;
+            else
+            {
+            }
         }
-        FR_OS_DelayMs(1000);
+        FR_OS_DelayMs(10);
         
     }
 }
@@ -680,11 +637,16 @@ void FOC_Control_Status_Task(void *pvParameters)
             FR_OS_DelayMs(3000);
             f32InputAngle = 0;
             FR_OS_DelayMs(3000);
-
             _eFocStatus = E_FOC_STATUS_RUNNING;
         }
         FR_OS_DelayMs(20);
     }
+}
+
+void FOC_Control_Set_InputCtrl(ST_FOC_Ctrl_Params_t *pstFocCtrlParmas)
+{
+    //memset(&stFocInputCtrl, 0, sizeof(ST_FOC_Ctrl_Params_t));
+    memcpy(&stFocInputCtrl, pstFocCtrlParmas, sizeof(ST_FOC_Ctrl_Params_t));
 }
 
 void FOC_Control_Filter_Task(void *pvParameters)

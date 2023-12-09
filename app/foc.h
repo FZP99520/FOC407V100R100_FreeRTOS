@@ -99,9 +99,12 @@ typedef struct
 
 typedef struct
 {
-    float f32IqMax;
+    float f32InputAngle;
+    float f32InputOmega;
+    float f32InputId;
+    float f32InputIq;
+    u8 u8lock_mode;
 }ST_FOC_Ctrl_Params_t;
-
 
 typedef enum
 {
@@ -131,8 +134,7 @@ typedef enum
 
 typedef enum
 {
-
-    E_FOC_LOCK_ANGLE,
+    E_FOC_LOCK_ANGLE = 0,
     E_FOC_LOCK_OMEGA,
     E_FOC_LOCK_ID_IQ,
     E_FOC_LOCK_TEST_MODE
@@ -164,6 +166,8 @@ void FOC_Control_DataScope_Task(void *pvParameters);
 void FOC_Control_Running_Task(void *pvParameters);
 void FOC_Control_Status_Task(void *pvParameters);
 void FOC_Control_Filter_Task(void *pvParameters);
+void FOC_Control_Set_InputCtrl(ST_FOC_Ctrl_Params_t *pstFocCtrlParmas);
+
 
 #endif
 

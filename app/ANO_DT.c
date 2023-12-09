@@ -1,6 +1,8 @@
 #include "ANO_DT.h"
 #include "usart.h"
 
+#include "foc.h"
+
 //#include "imu.h"
 //#include "mpu6050.h"
 //#include "ak8975.h"
@@ -1677,7 +1679,6 @@ static u8 _ANO_DT_Slaver_Receive_Ack(u8 *pu8Buff, u8 u8data_size)
     u8 u8Ack = 0;
 
     u8Ack = pu8Buff[0];
-
     switch(u8Ack)
     {
         case E_ANO_DT_M2S_TYPE_ACK_READ_PID:
@@ -1711,7 +1712,6 @@ static u8 _ANO_DT_Slaver_Receive_Rcdata(u8 *pu8Buff, u8 u8data_size, ST_ANO_DT_D
     pstDataOut->s16AUX4 = (s16)pu8Buff[14]<<8 | pu8Buff[15];
     pstDataOut->s16AUX5 = (s16)pu8Buff[16]<<8 | pu8Buff[17];
     pstDataOut->s16AUX6 = (s16)pu8Buff[18]<<8 | pu8Buff[19];
-
     return TRUE;
 }
 
@@ -1766,8 +1766,7 @@ static u8 _ANO_DT_Slaver_Receive_Handler(u8 *pu8Buff, u8 u8len)
     stAnoDtRecFrameInfo.u8FuncType  = (EN_ANO_DT_FUNC_M2S_TYPE)eFuncType;
     stAnoDtRecFrameInfo.u8datalen   = u8DataLen;
     stAnoDtRecFrameInfo.pu8Buff     = pu8DataBuff; //get data pointer
-    
-    
+
     switch(eFuncType)
     {
         case E_ANO_DT_FUNC_M2S_TYPE_COMMAND:
@@ -1804,8 +1803,20 @@ static u8 _ANO_DT_Slaver_Receive_Handler(u8 *pu8Buff, u8 u8len)
                 memset(pstAnoDt_FOC_Input, 0, sizeof(ST_ANO_DT_DATA_M2S_FOC_INPUT_CTRL));
                 u8Ret = _ANO_DT_Slaver_Receive_FOC_Input(pu8DataBuff, pstAnoDt_FOC_Input);
                 //here to use data
-                vPortFree(pstAnoDt_FOC_Input);
-                pstAnoDt_FOC_Input = NULL;
+                ST_FOC_Ctrl_Params_t stFocCtrlParams;
+                memset(&stFocCtrlParams, 0x0, sizeof(ST_FOC_Ctrl_Params_t));
+                stFocCtrlParams.f32InputAngle = (float)pstAnoDt_FOC_Input->s16Angle/100.0f;
+                stFocCtrlParams.f32InputOmega = (float)pstAnoDt_FOC_Input->s16Omega/10.0f;
+                stFocCtrlParams.f32InputId    = (float)pstAnoDt_FOC_Input->s16I_d/100.0f;
+                stFocCtrlParams.f32InputIq    = (float)pstAnoDt_FOC_Input->s16I_q/100.0f;
+                stFocCtrlParams.u8lock_mode   = pstAnoDt_FOC_Input->u8lock_mode;
+                FOC_Control_Set_InputCtrl(&stFocCtrlParams);
+                //end
+                if(pstAnoDt_FOC_Input != NULL)
+                {
+                    vPortFree(pstAnoDt_FOC_Input);
+                    pstAnoDt_FOC_Input = NULL;
+                }
             }
             break;
         }

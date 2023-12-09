@@ -158,8 +158,10 @@ void USART1_ReceiveData_Callback(void)
 
     stUsartData.u8len = stUSART1_STA.u16Rx_Size;
     stUsartData.pu8DataAddr = USART1_RX_Buff_FIFO[u8RxFifoIndex];
-    
-    FR_OS_QueueSendFromISR(hUSART1_RX_Queue, &stUsartData);
+    if((xTaskGetSchedulerState() != taskSCHEDULER_NOT_STARTED) && (hUSART1_RX_Queue != NULL))
+    {
+        FR_OS_QueueSendFromISR(hUSART1_RX_Queue, &stUsartData);
+    }
     u8RxFifoIndex++;
     if(u8RxFifoIndex == USART1_BUFF_RX_FIFO_NUM)
     {

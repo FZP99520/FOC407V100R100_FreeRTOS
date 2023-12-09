@@ -1,6 +1,6 @@
 # Prerequisites
 *.d
-
+*.axf
 # add for project file
 *.crf
 *.d
